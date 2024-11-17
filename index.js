@@ -111,12 +111,6 @@ client.on('disconnected', (reason) => {
 
 // Listen for incoming messages and respond using Gemini AI
 client.on('message', async (msg) => {
-    // Check if the message type is a status update (not a regular message)
-    if (msg.type === 'status') {
-        console.log(`Ignoring status update from ${msg.from}`);
-        return; // Skip status updates
-    }
-
     console.log(`Received message from ${msg.from}: ${msg.body}`);
     const response = await getAIResponse(msg.body, msg.from); // Get AI-generated response with user history
     client.sendMessage(msg.from, response)
