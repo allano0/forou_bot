@@ -49,7 +49,7 @@ async function getAIResponse(prompt, userId) {
             conversationHistory[userId].push({ role: 'ai', message: aiText });
 
             // Add the footer text with company information and contact
-            const footer = "\n\nPowered by Forou.tech\nFor more information,contact 0741727877.";
+            const footer = "\n\nPowered by Forou.tech";
             const finalResponse = aiText + footer; // Combine AI text with the footer
 
             return finalResponse; // Return the final message with footer
