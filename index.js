@@ -24,37 +24,25 @@ let conversationHistory = {};
 // Function to retrieve and update conversation history
 async function getAIResponse(prompt, userId) {
     try {
-        // Check if the user has a conversation history
         if (!conversationHistory[userId]) {
-            conversationHistory[userId] = []; // Initialize an empty conversation history for the user
+            conversationHistory[userId] = [];
         }
 
-        // Add the current message to the history
         conversationHistory[userId].push({ role: 'user', message: prompt });
 
-        // Construct the full prompt by combining the history and the new prompt
         const conversation = conversationHistory[userId].map((entry) => `${entry.role}: ${entry.message}`).join("\n");
         const fullPrompt = conversation + "\nuser: " + prompt;
 
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const result = await model.generateContent([fullPrompt]);
 
-        console.log('Gemini API response:', result);
-
         if (result.response && result.response.text) {
             const aiText = await result.response.text();
-            console.log('AI Response:', aiText);
-
-            // Add the AI's response to the history
             conversationHistory[userId].push({ role: 'ai', message: aiText });
 
-            // Add the footer text with company information and contact
             const footer = "\n\nPowered by Forou.tech";
-            const finalResponse = aiText + footer; // Combine AI text with the footer
-
-            return finalResponse; // Return the final message with footer
+            return aiText + footer;
         } else {
-            console.warn('No valid response received from Gemini.');
             return 'I couldn’t generate a response. Please try again.';
         }
     } catch (err) {
@@ -63,9 +51,7 @@ async function getAIResponse(prompt, userId) {
     }
 }
 
-
 client.on('qr', (qr) => {
-    console.log('QR Code received. Generating QR...');
     qrcode.toDataURL(qr, (err, url) => {
         if (err) {
             console.error('Error generating QR code:', err);
@@ -89,7 +75,6 @@ client.on('qr', (qr) => {
         `;
 
         fs.writeFileSync(path.join(__dirname, 'views', 'qr.html'), html);
-        console.log('QR Code HTML generated. Open http://localhost:3000 to scan.');
     });
 });
 
@@ -109,10 +94,8 @@ client.on('disconnected', (reason) => {
     console.error('Client disconnected:', reason);
 });
 
-// Listen for incoming messages and respond using Gemini AI
 client.on('message', async (msg) => {
-    console.log(`Received message from ${msg.from}: ${msg.body}`);
-    const response = await getAIResponse(msg.body, msg.from); // Get AI-generated response with user history
+    const response = await getAIResponse(msg.body, msg.from);
     client.sendMessage(msg.from, response)
         .then(() => console.log(`Response sent to ${msg.from}`))
         .catch((err) => console.error(`Error sending message: ${err}`));
@@ -120,10 +103,17 @@ client.on('message', async (msg) => {
 
 client.initialize();
 
-// Serve the QR code HTML file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'qr.html'));
 });
+
+// Keep the server active
+setInterval(() => {
+    console.log('Waiting for incoming messages...');
+    client.getChats()
+        .then(chats => console.log(`Currently tracking ${chats.length} chats`))
+        .catch(err => console.error('Error retrieving chats:', err));
+}, 5000); // Adjust the interval (e.g., every 5 minutes)
 
 // Start the server
 const PORT = 3000;
